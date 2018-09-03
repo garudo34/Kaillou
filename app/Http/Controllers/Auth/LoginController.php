@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\ApiController;
 use App\Http\Controllers\Controller;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use function Psy\debug;
 
-class LoginController extends Controller
+class LoginController extends ApiController
 {
     /*
     |--------------------------------------------------------------------------
@@ -47,7 +49,7 @@ class LoginController extends Controller
             $user = $this->guard()->user();
             $user->generateToken();
 
-            return response()->json($user, 200, [], JSON_PRETTY_PRINT);
+            return $this->respond($user, Response::HTTP_OK, [], JSON_PRETTY_PRINT);
         }
 
         return $this->sendFailedLoginResponse($request);
@@ -62,12 +64,12 @@ class LoginController extends Controller
             $user->save();
         }
 
-        return response()->json($data = 'User logged out.', $status = 200);
+        return $this->respond($data = 'User logged out.', $status = Response::HTTP_OK);
     }
 
     protected function sendFailedLoginResponse(Request $request)
     {
-        $errors = ['error' => trans('auth.failed')];
-        return response()->json(['data' => $errors], 422);
+        $errors = trans('auth.failed');
+        return $this->respondWithError($errors, Response::HTTP_UNPROCESSABLE_ENTITY);
     }
 }

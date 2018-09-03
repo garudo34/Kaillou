@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 
 use App\Anime;
-use App\Composer;
+use App\Http\Requests\AnimeRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -29,7 +29,8 @@ class AnimeController extends ApiController
     {
         $animes = Anime::orderBy('title')->get();
 
-        return $this->respond($this->animeTransformer->transformCollection($animes->toArray()));
+        return $this->respond($this->animeTransformer->transformCollection($animes->toArray()),
+            'Animes retrieved successfully.');
     }
 
     /**
@@ -45,13 +46,20 @@ class AnimeController extends ApiController
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request $request
+     * @param AnimeRequest|Request $request
      * @return Response
      */
-    public function store(Request $request)
+    public function store(AnimeRequest $request)
     {
-        $anime = Anime::create($request->all());
-        return response()->json($anime, 201);
+        $input = $request->all();
+
+        if (isset($request->validator) && $request->validator->fails()) {
+            return $this->respondValidationError('Validation Error', $request->validator->errors());
+        }
+
+        $anime = Anime::create($input);
+
+        return $this->respondCreated($anime, 'Animes created successfully.');
     }
 
     /**
@@ -63,25 +71,26 @@ class AnimeController extends ApiController
      */
     public function show(Anime $anime)
     {
-        $result = $anime->with(['songs', 'composers'])->findOrFail($anime);
+        $result = $anime::with([
+            'composers' => function ($q) use ($anime) {
+                $q->where('anime_id', $anime->id);
+            },
+            'songs'     => function ($q) use ($anime) {
+                $q->where('anime_id', $anime->id);
+            },
+        ])->first();
 
-        if (!$result) {
-            return $this->respondNotFound('Anime does not exist');
-        }
-//        dd($this->animeTransformer->transform($result));
-
-        return $this->respond($result);
-//        return response()->json($result, 200);
+        return $this->respond($result, 'Anime retrieved successfully.');
     }
 
     /**
      * Show the form for editing the specified resource.
      *
-     * @param Composer $composer
+     * @param Anime $anime
      * @return Response
      * @internal param int $id
      */
-    public function edit(Composer $composer)
+    public function edit(Anime $anime)
     {
         //
     }
@@ -89,15 +98,22 @@ class AnimeController extends ApiController
     /**
      * Update the specified resource in storage.
      *
-     * @param  \Illuminate\Http\Request $request
+     * @param AnimeRequest|Request $request
      * @param Anime $anime
      * @return Response
      * @internal param int $id
      */
-    public function update(Request $request, Anime $anime)
+    public function update(AnimeRequest $request, Anime $anime)
     {
-        $anime->update($request->all());
-        return response()->json($anime, 201);
+        $input = $request->all();
+
+        if (isset($request->validator) && $request->validator->fails()) {
+            return $this->respondValidationError('Validation Error', $request->validator->errors());
+        }
+
+        $anime->fill($input)->save();
+
+        return $this->respond($anime, 'Anime updated successfully.');
     }
 
     /**
@@ -110,6 +126,6 @@ class AnimeController extends ApiController
     public function destroy(Anime $anime)
     {
         $anime->delete();
-        return response()->json(null, 204);
+        return $this->respond($anime, 'Product deleted successfully.');
     }
 }

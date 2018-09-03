@@ -5,7 +5,9 @@ namespace App\Exceptions;
 use Exception;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class Handler extends ExceptionHandler
 {
@@ -43,24 +45,31 @@ class Handler extends ExceptionHandler
      * Render an exception into an HTTP response.
      *
      * @param  \Illuminate\Http\Request $request
-     * @param  \Exception $exception
+     * @param  \Exception $e
      * @return \Illuminate\Http\Response
      */
-    public function render($request, Exception $exception)
+    public function render($request, Exception $e)
     {
-        // This will replace our 404 response with
-        // a JSON response.
-//        if ($exception instanceof ModelNotFoundException) {
-//            return response()->json([
-//                'success' => false,
-//                'error'   => [
-//                    'code'    => $exception ? $exception->getCode() : 500,
-//                    'message' => $exception->getMessage()
-//                ]
-//            ], 404);
-//        }
+        if ($request->wantsJson()) {
+            if ($e instanceof ModelNotFoundException) {
+                return response()->json([
+                    'message'     => 'Resource not found',
+                    'status_code' => Response::HTTP_NOT_FOUND
+                ], Response::HTTP_NOT_FOUND);
+            } elseif ($e instanceof NotFoundHttpException) {
+                return response()->json([
+                    'message'     => 'Endpoint not found',
+                    'status_code' => Response::HTTP_NOT_FOUND
+                ], Response::HTTP_NOT_FOUND);
+            }
 
-        return parent::render($request, $exception);
+            return response()->json([
+                'message'     => $e->getMessage(),
+                'status_code' => Response::HTTP_BAD_REQUEST
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        return parent::render($request, $e);
     }
 
     protected function invalidJson($request, ValidationException $exception)

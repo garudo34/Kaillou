@@ -9,10 +9,12 @@
 namespace App\Http\Controllers;
 
 
+use Illuminate\Http\Response;
+
 class ApiController extends Controller
 {
 
-    protected $statusCode = 200;
+    protected $statusCode = Response::HTTP_OK;
 
     public function getStatusCode()
     {
@@ -28,41 +30,45 @@ class ApiController extends Controller
 
     public function respondNotFound($message = 'Not found!')
     {
-        return $this->setStatusCode(404)->respondWithError($message);
+        return $this->setStatusCode(Response::HTTP_NOT_FOUND)->respondWithError($message);
     }
 
     public function respondInternalError($message = 'Internal Error!')
     {
-        return $this->setStatusCode(500)->respondWithError($message);
+        return $this->setStatusCode(Response::HTTP_INTERNAL_SERVER_ERROR)->respondWithError($message);
         //usage in controller = return $this->respondInternalError();
     }
 
-    public function respond($data, $headers = [])
+    public function respond($data, $message)
     {
-        return Response()->json($data, $this->getStatusCode(), $headers);
-    }
-
-    public function respondWithError($message)
-    {
-        return $this->respond([
-            'error' => [
-                'message'     => $message,
-                'status_code' => $this->getStatusCode()
-            ]
-        ]);
-    }
-
-    public function respondValidationError($message)
-    {
-        return $this->setStatusCode(422)->respond([
-            'messaae' => $message
-        ]);
-    }
-
-    public function respondCreated($message)
-    {
-        return $this->setStatusCode(201)->respond([
+        $response = [
+            'success' => true,
+            'data'    => $data,
             'message' => $message
-        ]);
+        ];
+        return Response()->json($response, $this->getStatusCode());
+    }
+
+    public function respondWithError($error, $errorMessages = [], $code = Response::HTTP_NOT_FOUND)
+    {
+        $response = [
+            'success' => false,
+            'message' => $error,
+        ];
+
+        if (!empty($errorMessages)) {
+            $response['data'] = $errorMessages;
+        }
+        return Response()->json($response, $code);
+    }
+
+    public function respondValidationError($message, $error)
+    {
+        return $this->respondWithError($message, $error, Response::HTTP_UNPROCESSABLE_ENTITY);
+    }
+
+    public function respondCreated($data, $message)
+    {
+        return $this->setStatusCode(Response::HTTP_CREATED)->respond($data, $message);
     }
 }

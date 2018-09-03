@@ -8,6 +8,8 @@ class Anime extends Model
 {
     protected $guarded = [];
 
+    protected $fillable = [];
+
     public function composers()
     {
         return $this->belongsToMany(Composer::class);

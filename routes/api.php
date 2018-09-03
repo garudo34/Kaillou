@@ -26,8 +26,8 @@ Route::post('logout', 'Auth\LoginController@logout');
 Route::group(['middleware' => 'auth:api'], function () {
     Route::get('animes', 'AnimeController@index');
     Route::get('animes/{anime}', 'AnimeController@show');
-    Route::post('animes', 'AnimeController@store');
-    Route::put('animes/{anime}', 'AnimeController@update');
+    Route::put('animes', 'AnimeController@store');
+    Route::patch('animes/{anime}', 'AnimeController@update');
     Route::delete('animes/{anime}', 'AnimeController@destroy');
 
     Route::get('animes/{anime}/composers', 'AnimeController@index');
